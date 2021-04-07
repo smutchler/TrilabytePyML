@@ -1,0 +1,9 @@
+pmdarima
+loess
+scikit-learn
+numpy
+scipy
+pandas
+ephem
+pystan
+fbprophet

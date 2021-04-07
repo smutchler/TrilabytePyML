@@ -9,15 +9,15 @@ setup(name='TrilabytePyML',
       license='GPLv3',
       packages=['TrilabytePyML'],
       install_requires=[
+        'pmdarima',
+        'loess',
+        'scikit-learn',
+        'numpy',
+        'scipy',
+        'pandas',
+        'ephem',
+        'pystan',
+        'fbprophet'
       ],
       zip_safe=False)
 
-#           'pmdarima',
-#           'loess',
-#           'scikit-learn',
-#           'numpy',
-#           'scipy',
-#           'pandas',
-#           'ephem',
-#           'pystan',
-#           'fbprophet'
