@@ -1,0 +1,14 @@
+INSTALLATION:
+
+1. This package requires Facebook prophet (fbprophet).  I've only been able to get fbprophet installed using Anaconda so Anaconda is highly recommended.
+2. The following required packages should be installed by the pip/conda (under Anaconda) command for TrilabytePyML but ***ONLY IF STEP 3 FAILS*** here are the dependencies:
+	a. pip install pandas loess scipy numpy scikit-learn pmdarima
+	b. conda install -c anaconda ephem
+	c. conda install -c conda-forge pystan fbprophet
+3. pip install git+https://github.com/smutchler/TrilabytePyML.git#"egg=TrilabytePyML&subdirectory=TrilabytePyML"
+4. look at the examples in the TrilabytePyML/samples folder for usage
+
+
+NOTES:
+
+The package changed from trilabytePyML to TrilabytePyML.  Please adjust your imports.
