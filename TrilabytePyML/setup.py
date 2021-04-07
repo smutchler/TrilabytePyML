@@ -7,7 +7,7 @@ setup(name='TrilabytePyML',
       author='Scott Mutchler',
       author_email='smutchler@trilabyte.com',
       license='GPLv3',
-      packages=['TrilabytePyML'],
+      packages=['TrilabytePyML','TrilabytePyML.stats','TrilabytePyML.util'],
       install_requires=[
         'pmdarima',
         'loess',
