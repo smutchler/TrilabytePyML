@@ -5,7 +5,15 @@ INSTALLATION:
 	a. pip install pandas loess scipy numpy scikit-learn pmdarima
 	b. conda install -c anaconda ephem
 	c. conda install -c conda-forge pystan fbprophet
-3. pip install git+https://github.com/smutchler/TrilabytePyML.git#"egg=TrilabytePyML&subdirectory=TrilabytePyML"
+3. No proxy:
+
+		pip install git+https://github.com/smutchler/TrilabytePyML.git#"egg=TrilabytePyML&subdirectory=TrilabytePyML"
+
+	If you are behind a proxy try:
+	
+		pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org git+https://github.com/smutchler/TrilabytePyML.git#"egg=TrilabytePyML&subdirectory=TrilabytePyML"
+  
+
 4. look at the examples in the TrilabytePyML/samples folder for usage
 
 
