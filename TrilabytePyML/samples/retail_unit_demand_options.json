@@ -1,0 +1,35 @@
+{
+	"sortColumns": [
+		"SKU",
+		"STORE_NUMBER",
+		"CAL_YEAR",
+		"CAL_MONTH"
+	],
+	"splitColumns": [
+		"SKU",
+		"STORE_NUMBER"
+	],
+	"predictorColumns": [
+		"X_INDEX",
+		"PREDICTOR_1",
+		"PREDICTOR_2",
+		"PREDICTOR_3",
+		"PREDICTOR_4"
+	],
+	"method": "Prophet",
+	"targetColumn": "UNIT_DEMAND",
+	"periodicity": 12,
+	"seasonality": "Auto",
+	"autoDetectOutliers": true,
+	"outlierStdevMultiplier": 3.0,
+	"seasonalityBandwidth": 0.7,
+	"ridgeAlpha": 1.0,
+	"timestampColumn": "CAL_DATE",
+	"forceNonNegative": false,
+	"hypertune": true,
+	"numHoldoutRows": 6,
+	"interval_width": 0.95,
+	"changepoint_prior_scale": 0.05, 
+	"holidays_prior_scale": 10.0,
+	"changepoints_fraction": 0.1
+}
