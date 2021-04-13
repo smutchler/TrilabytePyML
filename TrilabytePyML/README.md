@@ -1,3 +1,7 @@
+# Trilabyte PyML
+
+This is a time series/regression package that handles multiple data sets stacked on top of each other.  
+
 INSTALLATION:
 
 1. This package requires Facebook prophet (fbprophet).  I've only been able to get fbprophet installed using Anaconda so Anaconda is highly recommended.
