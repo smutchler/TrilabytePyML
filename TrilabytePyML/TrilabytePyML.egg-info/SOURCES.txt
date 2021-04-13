@@ -1,3 +1,4 @@
+README.md
 setup.py
 TrilabytePyML/AutoForecast.py
 TrilabytePyML/Forecast.py
@@ -9,3 +10,7 @@ TrilabytePyML.egg-info/dependency_links.txt
 TrilabytePyML.egg-info/not-zip-safe
 TrilabytePyML.egg-info/requires.txt
 TrilabytePyML.egg-info/top_level.txt
+TrilabytePyML/stats/Statistics.py
+TrilabytePyML/stats/__init__.py
+TrilabytePyML/util/Parameters.py
+TrilabytePyML/util/__init__.py

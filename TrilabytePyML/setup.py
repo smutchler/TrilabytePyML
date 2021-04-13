@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='TrilabytePyML',
-      version='1.0',
+      version='1.1',
       description='Trilabyte Python Machine Learning',
       url='http://github.com/smutchler/src',
       author='Scott Mutchler',
@@ -16,7 +16,7 @@ setup(name='TrilabytePyML',
         'scipy',
         'pandas',
         'ephem',
-        'pystan',
+        'pystan==2.19.1.1',
         'fbprophet'
       ],
       zip_safe=False)
