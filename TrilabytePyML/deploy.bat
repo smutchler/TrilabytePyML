@@ -1,2 +1,2 @@
-python -m pip install --user --upgrade twine
-python -m twine upload --repository TrilabytePyML dist/*
+py -m pip install --user --upgrade twine
+py -m twine upload --repository TrilabytePyML dist/*

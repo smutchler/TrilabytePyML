@@ -1,1 +1,1 @@
-python setup.py develop
+py setup.py develop
