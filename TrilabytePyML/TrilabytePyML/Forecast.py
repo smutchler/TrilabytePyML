@@ -317,7 +317,7 @@ class Forecast:
         
         # short-circuit if none is chosen
         if params.getParam('seasonality', options) == 'None':
-            frame['X_SEASONALITY'] = None
+            frame['X_SEASONALITY'] = np.nan
             fdict['frame'] = frame
             return fdict;
         
@@ -419,7 +419,7 @@ class Forecast:
         frame['X_UPI'] = frame['X_FORECAST'] + predictionInterval 
         
         targetColumn = params.getParam('targetColumn', options)
-        frame['X_APE'] = None 
+        frame['X_APE'] = np.nan 
         for index, row in frame.iterrows():
             frame['X_APE'][index] = (abs(row['X_FORECAST'] - row[targetColumn]) / row[targetColumn] * 100.0) if row[targetColumn] != 0 else None
         
@@ -641,7 +641,7 @@ class Forecast:
         frame['X_RESIDUAL'] = frame['X_FORECAST'] - frame[params.getParam('targetColumn', options)] 
         
         targetColumn = params.getParam('targetColumn', options)
-        frame['X_APE'] = None 
+        frame['X_APE'] = np.nan 
         for index, row in frame.iterrows():
             frame['X_APE'][index] = (abs(row['X_FORECAST'] - row[targetColumn]) / row[targetColumn] * 100.0) if row[targetColumn] != 0 else None
         
@@ -651,13 +651,13 @@ class Forecast:
             frame.loc[frame['X_LPI'] < 0, 'X_LPI'] = 0
 
         # add columns for consistency with other methods        
-        frame['X_SEASONALITY'] = None 
+        frame['X_SEASONALITY'] = np.nan 
         frame['X_SEASONALITY_TYPE'] = None 
-        frame['X_TREND_PREDICTED'] = None 
-        frame['X_TREND_RATIO'] = None  
+        frame['X_TREND_PREDICTED'] = np.nan 
+        frame['X_TREND_RATIO'] = np.nan  
         frame['X_PREDICTORS'] = None
         frame['X_COEFFICIENTS'] = None
-        frame['X_INTERCEPT'] = None
+        frame['X_INTERCEPT'] = np.nan
         frame['X_HYPERTUNE'] = championPJSON
                 
         fdict = dict()
@@ -750,7 +750,7 @@ class Forecast:
         
         frame['X_RESIDUAL'] = frame['X_FORECAST'] - frame[targetColumn] 
 
-        frame['X_APE'] = None 
+        frame['X_APE'] = np.nan 
         for index, row in frame.iterrows():
             frame['X_APE'][index] = (abs(row['X_FORECAST'] - row[targetColumn]) / row[targetColumn] * 100.0) if row[targetColumn] != 0 else None
         
@@ -760,14 +760,14 @@ class Forecast:
             frame.loc[frame['X_LPI'] < 0, 'X_LPI'] = 0
         
         # add columns for consistency with other methods        
-        frame['X_SEASONALITY'] = None 
-        frame['X_SEASONALITY_TYPE'] = None 
-        frame['X_TREND_PREDICTED'] = None 
-        frame['X_TREND_RATIO'] = None 
+        frame['X_SEASONALITY'] = np.nan 
+        frame['X_SEASONALITY_TYPE'] = None
+        frame['X_TREND_PREDICTED'] = np.nan 
+        frame['X_TREND_RATIO'] = np.nan 
         frame['X_HYPERTUNE'] = None 
         frame['X_PREDICTORS'] = None
         frame['X_COEFFICIENTS'] = None
-        frame['X_INTERCEPT'] = None
+        frame['X_INTERCEPT'] = np.nan
         
         fdict = dict()
         fdict['frame'] = frame
