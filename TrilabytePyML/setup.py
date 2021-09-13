@@ -17,7 +17,8 @@ setup(name='TrilabytePyML',
         'pandas',
         'ephem',
         'pystan==2.19.1.1',
-        'fbprophet'
+        'fbprophet',
+        'plotly'
       ],
       zip_safe=False)
 
