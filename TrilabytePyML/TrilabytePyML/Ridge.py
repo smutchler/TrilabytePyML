@@ -43,6 +43,31 @@ def buildSampleoptionsJSONFile(jsonFileName: str) -> None:
         json.dump(options, fp)
 
         
+def detectOutliers(frame: pd.DataFrame, options: dict):
+    '''
+    Find target values that are outsize X standard deviations of the mean
+    add column X_OUTLIER where 1 = outlier; 0 = non-outlier
+    '''
+    stdev = frame[options['targetColumn']].std()
+    avg = frame[options['targetColumn']].mean()
+    
+    mult = 4.0
+    try:    
+        mult = options['outlierStdevMultiplier']
+    except:
+        pass
+    
+    #identifies outliers based on the number of standard deviations
+    frame['X_OUTLIER'] = 0
+    for index, row in frame.iterrows():
+        val = abs(frame[options['targetColumn']][index])
+        if val > avg + mult * stdev:
+                frame['X_OUTLIER'][index] = 1
+        else:
+                frame['X_OUTLIER'][index] = 0  
+    
+    return(frame)
+
 def predict(frame: pd.DataFrame, options: dict) -> dict:
     """
     The function takes as an argument the "frame" parameter, which is a 
@@ -73,7 +98,11 @@ def predict(frame: pd.DataFrame, options: dict) -> dict:
     """
     fdict = dict()
     
-    trainFrame = frame.loc[frame[options['roleColumn']] == 'TRAINING']
+    if 'autoDetectOutliers' in options and options['autoDetectOutliers']:
+        frame = detectOutliers(frame, options)
+        trainFrame = frame.loc[(frame[options['roleColumn']] == 'TRAINING') & (frame['X_OUTLIER'] == 0)]
+    else:
+        trainFrame = frame.loc[frame[options['roleColumn']] == 'TRAINING']
     
     x = trainFrame[options['predictorColumns']]
     y = trainFrame[options['targetColumn']]
@@ -142,17 +171,20 @@ if __name__ == '__main__':
     print("Usage: python -m src.Ridge [json options] [csv source data] [output csv file]")
     print("-------------------------------")
 
-#     fileName = 'c:/temp/iris_with_role_and_split.csv'
-#     outputFileName = 'c:/temp/iris_ridge.csv'
-#     jsonFileName = 'c:/temp/iris_ridge.json'
+    DEBUG = False
     
-    if (len(sys.argv) < 3):
-        print("Error: Insufficient arguments")
-        sys.exit(-1)
-        
-    jsonFileName = sys.argv[1]
-    fileName = sys.argv[2]
-    outputFileName = sys.argv[3]
+    if DEBUG:
+        fileName = 'c:/temp/iris_with_role_and_split.csv'
+        outputFileName = 'c:/temp/iris_ridge.csv'
+        jsonFileName = 'c:/temp/iris_ridge.json'
+    else:
+        if (len(sys.argv) < 3):
+            print("Error: Insufficient arguments")
+            sys.exit(-1)
+            
+        jsonFileName = sys.argv[1]
+        fileName = sys.argv[2]
+        outputFileName = sys.argv[3]
     
     with open(jsonFileName, 'r') as fp:
         options = json.load(fp)

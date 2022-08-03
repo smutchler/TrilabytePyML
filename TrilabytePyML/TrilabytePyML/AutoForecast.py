@@ -129,16 +129,11 @@ def splitFramesAndForecast(frame: pd.DataFrame, options: dict) -> pd.DataFrame:
                 arimaMAPE = 1E6 if 'X_MAPE' not in arimaFrame else arimaFrame['X_MAPE'][0]
                 
                 opts = options.copy()
-                opts['method'] = 'Prophet'
-                prophetFrame = forecastSingleFrame(frame.copy(), opts)
-                prophetMAPE = 1E6 if 'X_MAPE' not in prophetFrame else prophetFrame['X_MAPE'][0]
-                
-                opts = options.copy()
                 opts['method'] = 'MLR'
                 mlrFrame = forecastSingleFrame(frame.copy(), opts)
                 mlrMAPE = 1E6 if 'X_MAPE' not in mlrFrame else mlrFrame['X_MAPE'][0]
                 
-                if 'X_FORECAST' in mlrFrame and 'X_FORECAST' in prophetFrame and 'X_FORECAST' in arimaFrame:
+                if 'X_FORECAST' in mlrFrame  and 'X_FORECAST' in arimaFrame:
                     ensembleFrame = mlrFrame.copy() 
                     
                     # we calculate MAPE using original data column
@@ -156,9 +151,9 @@ def splitFramesAndForecast(frame: pd.DataFrame, options: dict) -> pd.DataFrame:
                     else:
                         evalIdx = ensembleFrame['X_INDEX'] <= lastNonNullIdx
                     
-                    ensembleFrame['X_FORECAST'] = list(map(lambda x, y , z: median([x, y, z]), mlrFrame['X_FORECAST'], arimaFrame['X_FORECAST'], prophetFrame['X_FORECAST']))
-                    ensembleFrame['X_LPI'] = list(map(lambda x, y , z: median([x, y, z]), mlrFrame['X_LPI'], arimaFrame['X_LPI'], prophetFrame['X_LPI']))
-                    ensembleFrame['X_UPI'] = list(map(lambda x, y , z: median([x, y, z]), mlrFrame['X_UPI'], arimaFrame['X_UPI'], prophetFrame['X_UPI']))
+                    ensembleFrame['X_FORECAST'] = list(map(lambda x, y: median([x, y]), mlrFrame['X_FORECAST'], arimaFrame['X_FORECAST']))
+                    ensembleFrame['X_LPI'] = list(map(lambda x, y: median([x, y]), mlrFrame['X_LPI'], arimaFrame['X_LPI']))
+                    ensembleFrame['X_UPI'] = list(map(lambda x, y: median([x, y]), mlrFrame['X_UPI'], arimaFrame['X_UPI']))
                     
                     evalFrame = ensembleFrame[evalIdx]
                     try:
@@ -173,20 +168,17 @@ def splitFramesAndForecast(frame: pd.DataFrame, options: dict) -> pd.DataFrame:
                         if (not('X_APE' in ensembleFrame)):
                             ensembleFrame['X_APE'] = 1E6
                         
-                    mapes = [mlrMAPE, arimaMAPE, prophetMAPE, ensembleMAPE]
+                    mapes = [mlrMAPE, arimaMAPE, ensembleMAPE]
                 else:
-                    mapes = [mlrMAPE, arimaMAPE, prophetMAPE]
+                    mapes = [mlrMAPE, arimaMAPE]
                 
-                print("Auto MAPEs (MLR, ARIMA, Prophet, Ensemble): ", mapes)
+                print("Auto MAPEs (MLR, ARIMA, Ensemble): ", mapes)
                 
                 minMAPE = min(mapes)
                 
                 if (mlrMAPE <= minMAPE):
                     frame = mlrFrame
                     frame['X_METHOD'] = 'MLR'
-                elif (prophetMAPE <= minMAPE):
-                    frame = prophetFrame
-                    frame['X_METHOD'] = 'Prophet'
                 elif (arimaMAPE <= minMAPE):
                     frame = arimaFrame
                     frame['X_METHOD'] = 'ARIMA'      
@@ -230,8 +222,6 @@ def forecastSingleFrame(frame: pd.DataFrame, options: dict) -> pd.DataFrame:
                 currentOptions['seasonality'] = findOptimalSeasonality(frame.copy(), options.copy())
             
             fdict = model.forecastMLR(frame, currentOptions.copy())
-        elif method.lower() == 'Prophet'.lower():
-            fdict = model.forecastProphet(frame, options.copy())
         else:
             fdict = model.forecastARIMA(frame, currentOptions.copy())
         
@@ -240,7 +230,7 @@ def forecastSingleFrame(frame: pd.DataFrame, options: dict) -> pd.DataFrame:
         frame['X_METHOD'] = method
     
     except Exception as e:
-        ed = str(traceback.format_exc()).replace('\n', ' ')
+        # ed = str(traceback.format_exc()).replace('\n', ' ')
         frame['X_ERROR'] = e
         frame['X_METHOD'] = method
     
@@ -254,19 +244,15 @@ if __name__ == '__main__':
     
     print("AutoForecast")
     print("-------------------------------")
-    print("*** You must use Anaconda for Facebook Prophet")
-    print("")
     print("Required Librarires:")
     print("pip install pandas loess scipy numpy scikit-learn pmdarima")
-    print("conda install -c anaconda ephem")
-    print("conda install -c conda-forge pystan fbprophet")
     print("-------------------------------")
     print("Usage: python -m src.AutoForecast [json forecastMLR options] [csv source data] [output csv file]")
     print("-------------------------------")
   
     pd.options.mode.chained_assignment = None  # default='warn'
   
-    DEBUG = False 
+    DEBUG = True 
   
     if DEBUG:
         fileName = 'c:/temp/retail_unit_demand.csv'
@@ -276,7 +262,6 @@ if __name__ == '__main__':
         if (len(sys.argv) < 3):
             print("Error: Insufficient arguments")
             sys.exit(-1)
-                    
         jsonFileName = sys.argv[1]
         fileName = sys.argv[2]
         outputFileName = sys.argv[3]

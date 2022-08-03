@@ -16,7 +16,7 @@
 		"PREDICTOR_3",
 		"PREDICTOR_4"
 	],
-	"method": "Prophet",
+	"method": "Auto",
 	"targetColumn": "UNIT_DEMAND",
 	"periodicity": 12,
 	"seasonality": "Auto",
@@ -26,10 +26,5 @@
 	"ridgeAlpha": 1.0,
 	"timestampColumn": "CAL_DATE",
 	"forceNonNegative": false,
-	"hypertune": true,
-	"numHoldoutRows": 6,
-	"interval_width": 0.95,
-	"changepoint_prior_scale": 0.05, 
-	"holidays_prior_scale": 10.0,
-	"changepoints_fraction": 0.1
+	"numHoldoutRows": 6
 }
