@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='TrilabytePyML',
-      version='1.2',
+      version='1.3',
       description='Trilabyte Python Machine Learning',
       url='http://github.com/smutchler/src',
       author='Scott Mutchler',
@@ -14,11 +14,7 @@ setup(name='TrilabytePyML',
         'scikit-learn',
         'numpy',
         'scipy',
-        'pandas',
-        'ephem',
-        'pystan==2.19.1.1',
-        'fbprophet',
-        'plotly'
+        'pandas'
       ],
       zip_safe=False)
 
