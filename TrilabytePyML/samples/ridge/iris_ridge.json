@@ -10,6 +10,6 @@
 	"roleColumn": "Role",
 	"targetColumn": "Petal.Length",
 	"autoDetectOutliers": true,
-	"outlierStdevMultiplier": 3.0,
+	"outlierStdevMultiplier": 2.0,
 	"ridgeAlpha": 1.0
 }

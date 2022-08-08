@@ -11,6 +11,7 @@ import json
 import sys
 import pandas as pd 
 from sklearn.linear_model import Ridge
+import TrilabytePyML.util.Parameters as params 
 
 def buildSampleoptionsJSONFile(jsonFileName: str) -> None:
     """
@@ -48,23 +49,29 @@ def detectOutliers(frame: pd.DataFrame, options: dict):
     Find target values that are outsize X standard deviations of the mean
     add column X_OUTLIER where 1 = outlier; 0 = non-outlier
     '''
-    stdev = frame[options['targetColumn']].std()
-    avg = frame[options['targetColumn']].mean()
+    # stdev = frame[options['targetColumn']].std()
+    # avg = frame[options['targetColumn']].mean()
     
-    mult = 4.0
-    try:    
-        mult = options['outlierStdevMultiplier']
-    except:
-        pass
+    mult = params.getParam('outlierStdevMultiplier', options)
     
     #identifies outliers based on the number of standard deviations
     frame['X_OUTLIER'] = 0
     for index, row in frame.iterrows():
         val = abs(frame[options['targetColumn']][index])
-        if val > avg + mult * stdev:
-                frame['X_OUTLIER'][index] = 1
+        data = frame[options['targetColumn']].copy()
+        data = data.drop(index)
+        
+        # check for sufficient data
+        if (len(data) >= 2):
+            stdev = data.std()
+            avg = data.mean()
+            
+            if val > avg + mult * stdev:
+                    frame['X_OUTLIER'][index] = 1
+            else:
+                    frame['X_OUTLIER'][index] = 0  
         else:
-                frame['X_OUTLIER'][index] = 0  
+            frame['X_OUTLIER'][index] = 0
     
     return(frame)
 
@@ -97,8 +104,8 @@ def predict(frame: pd.DataFrame, options: dict) -> dict:
 
     """
     fdict = dict()
-    
-    if 'autoDetectOutliers' in options and options['autoDetectOutliers']:
+        
+    if params.getParam('autoDetectOutliers', options):
         frame = detectOutliers(frame, options)
         trainFrame = frame.loc[(frame[options['roleColumn']] == 'TRAINING') & (frame['X_OUTLIER'] == 0)]
     else:
