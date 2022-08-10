@@ -12,6 +12,7 @@ import sys
 import pandas as pd 
 from sklearn.linear_model import Ridge
 import TrilabytePyML.util.Parameters as params 
+import random
 
 def buildSampleoptionsJSONFile(jsonFileName: str) -> None:
     """
@@ -104,12 +105,17 @@ def predict(frame: pd.DataFrame, options: dict) -> dict:
 
     """
     fdict = dict()
+    
+    # handle hold-out fraction
+    holdoutFraction = params.getParam('holdoutFraction', options)
+    frame['X_HOLDOUT'] = frame.apply(lambda x: 1 if (x[options['roleColumn']] == 'TRAINING') & (random.random() < holdoutFraction) else 0, axis=1)
         
     if params.getParam('autoDetectOutliers', options):
         frame = detectOutliers(frame, options)
-        trainFrame = frame.loc[(frame[options['roleColumn']] == 'TRAINING') & (frame['X_OUTLIER'] == 0)]
     else:
-        trainFrame = frame.loc[frame[options['roleColumn']] == 'TRAINING']
+        frame['X_OUTLIER'] = 0
+        
+    trainFrame = frame.loc[(frame[options['roleColumn']] == 'TRAINING') & (frame['X_OUTLIER'] == 0) & (frame['X_HOLDOUT'] == 0)]
     
     x = trainFrame[options['predictorColumns']]
     y = trainFrame[options['targetColumn']]
@@ -178,7 +184,7 @@ if __name__ == '__main__':
     print("Usage: python -m src.Ridge [json options] [csv source data] [output csv file]")
     print("-------------------------------")
 
-    DEBUG = False
+    DEBUG = True
     
     if DEBUG:
         fileName = 'c:/temp/iris_with_role_and_split.csv'

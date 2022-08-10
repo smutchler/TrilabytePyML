@@ -36,8 +36,11 @@ def getParam(param: str, options: dict) -> Union[str, int, float, list, bool]:
         defaults['seasonalityBandwidth'] = 0.7
         defaults['ridgeAlpha'] = 1.0
         defaults['forceNonNegative'] = False
-        defaults['numHoldoutRows'] = 0
         defaults['scalePredictors'] = False 
+        # fraction is for Ridge / rows is for Foreecast
+        defaults['holdoutFraction'] = 0.0
+        defaults['numHoldoutRows'] = 0
+        
         
         val = None if not(param in defaults) else defaults[param]
         
