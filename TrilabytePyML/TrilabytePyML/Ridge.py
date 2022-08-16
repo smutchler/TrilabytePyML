@@ -68,7 +68,7 @@ def detectOutliers(frame: pd.DataFrame, options: dict):
             avg = data.mean()
             
             # fix for near zero stdev
-            stdev = max(abs(avg/10.0), stdev)
+            stdev = max(abs(avg)**0.5, stdev)
             
             if val > avg + mult * stdev:
                     frame['X_OUTLIER'][index] = 1
@@ -187,7 +187,7 @@ if __name__ == '__main__':
     print("Usage: python -m src.Ridge [json options] [csv source data] [output csv file]")
     print("-------------------------------")
 
-    DEBUG = True
+    DEBUG = False
     
     if DEBUG:
         fileName = 'c:/temp/iris_with_role_and_split.csv'
