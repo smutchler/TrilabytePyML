@@ -67,6 +67,9 @@ def detectOutliers(frame: pd.DataFrame, options: dict):
             stdev = data.std()
             avg = data.mean()
             
+            # fix for near zero stdev
+            stdev = max(abs(avg/10.0), stdev)
+            
             if val > avg + mult * stdev:
                     frame['X_OUTLIER'][index] = 1
             else:
