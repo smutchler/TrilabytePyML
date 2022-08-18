@@ -143,7 +143,7 @@ def predict(frame: pd.DataFrame, options: dict) -> dict:
     frame['X_RSQR'] = model.score(x, y)
     frame['X_INTERCEPT'] = model.intercept_
     frame['X_PREDICTORS'] = ','.join(options['predictorColumns'])
-    frame['X_COEFFICENTS'] = ','.join(map(str, model.coef_))
+    frame['X_COEFFICIENTS'] = ','.join(map(str, model.coef_))
     frame['X_VAR_CONTRIBUTIONS'] = frame.apply(lambda x: calcContributions(x, model, options), axis = 1)
     frame['X_PREDICTED'] = yhat
 
