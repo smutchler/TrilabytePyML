@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='TrilabytePyML',
-      version='1.7',
+      version='1.8',
       description='Trilabyte Python Machine Learning',
       url='http://github.com/smutchler/src',
       author='Scott Mutchler',
