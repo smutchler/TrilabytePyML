@@ -1,6 +1,0 @@
-pmdarima
-loess
-scikit-learn
-numpy
-scipy
-pandas
