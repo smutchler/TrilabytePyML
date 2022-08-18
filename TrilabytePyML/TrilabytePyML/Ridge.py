@@ -79,6 +79,17 @@ def detectOutliers(frame: pd.DataFrame, options: dict):
     
     return(frame)
 
+def calcContributions(x, model, options):
+    '''
+    Calculate the regression coeff * predictor value for all columns (to calc contribution
+    of each variable on the final regression output)
+    '''
+    try:
+        vals = x[options['predictorColumns']] * model.coef_
+        return ','.join(map(str, vals))
+    except:
+        return None
+
 def predict(frame: pd.DataFrame, options: dict) -> dict:
     """
     The function takes as an argument the "frame" parameter, which is a 
@@ -128,7 +139,12 @@ def predict(frame: pd.DataFrame, options: dict) -> dict:
     
     xscore = frame[options['predictorColumns']]
     yhat = model.predict(xscore)
-    
+        
+    frame['X_RSQR'] = model.score(x, y)
+    frame['X_INTERCEPT'] = model.intercept_
+    frame['X_PREDICTORS'] = ','.join(options['predictorColumns'])
+    frame['X_COEFFICENTS'] = ','.join(map(str, model.coef_))
+    frame['X_VAR_CONTRIBUTIONS'] = frame.apply(lambda x: calcContributions(x, model, options), axis = 1)
     frame['X_PREDICTED'] = yhat
 
     fdict['frame'] = frame
