@@ -14,6 +14,7 @@ from sklearn.linear_model import Ridge
 import TrilabytePyML.util.Parameters as params 
 import random
 
+
 def buildSampleoptionsJSONFile(jsonFileName: str) -> None:
     """
     This function creates a JSON file storing some of the options information
@@ -55,7 +56,7 @@ def detectOutliers(frame: pd.DataFrame, options: dict):
     
     mult = params.getParam('outlierStdevMultiplier', options)
     
-    #identifies outliers based on the number of standard deviations
+    # identifies outliers based on the number of standard deviations
     frame['X_OUTLIER'] = 0
     for index, row in frame.iterrows():
         val = abs(frame[options['targetColumn']][index])
@@ -68,7 +69,7 @@ def detectOutliers(frame: pd.DataFrame, options: dict):
             avg = data.mean()
             
             # fix for near zero stdev
-            stdev = max(abs(avg)**0.5, stdev)
+            stdev = max(abs(avg) ** 0.5, stdev)
             
             if val > avg + mult * stdev:
                     frame['X_OUTLIER'][index] = 1
@@ -78,6 +79,7 @@ def detectOutliers(frame: pd.DataFrame, options: dict):
             frame['X_OUTLIER'][index] = 0
     
     return(frame)
+
 
 def calcContributions(x, model, options):
     '''
@@ -89,6 +91,7 @@ def calcContributions(x, model, options):
         return ','.join(map(str, vals))
     except:
         return None
+
 
 def predict(frame: pd.DataFrame, options: dict) -> dict:
     """
@@ -133,8 +136,11 @@ def predict(frame: pd.DataFrame, options: dict) -> dict:
     
     x = trainFrame[options['predictorColumns']]
     y = trainFrame[options['targetColumn']]
+            
+    positiveCoefficents = params.getParam('forcePositiveCoefficients', options)   
+    alpha = params.getParam('ridgeAlpha', options)     
                 
-    model = Ridge(alpha=options['ridgeAlpha'])
+    model = Ridge(alpha=alpha, positive=positiveCoefficents)
     model.fit(x, y)
     
     xscore = frame[options['predictorColumns']]
@@ -144,11 +150,12 @@ def predict(frame: pd.DataFrame, options: dict) -> dict:
     frame['X_INTERCEPT'] = model.intercept_
     frame['X_PREDICTORS'] = ','.join(options['predictorColumns'])
     frame['X_COEFFICIENTS'] = ','.join(map(str, model.coef_))
-    frame['X_VAR_CONTRIBUTIONS'] = frame.apply(lambda x: calcContributions(x, model, options), axis = 1)
+    frame['X_VAR_CONTRIBUTIONS'] = frame.apply(lambda x: calcContributions(x, model, options), axis=1)
     frame['X_PREDICTED'] = yhat
 
     fdict['frame'] = frame
     return(fdict)
+
 
 def splitIntoFramesAndPredict(frame: pd.DataFrame, options: dict) -> pd.DataFrame:
     """
@@ -190,6 +197,7 @@ def splitIntoFramesAndPredict(frame: pd.DataFrame, options: dict) -> pd.DataFram
     
     return outputFrame
 
+
 ##############################
 # Main
 ##############################
@@ -222,7 +230,7 @@ if __name__ == '__main__':
         options = json.load(fp)
     
     print('Options:') 
-    print(json.dumps(options,indent=2), '\n')
+    print(json.dumps(options, indent=2), '\n')
 
     frame = pd.read_csv(fileName)
     

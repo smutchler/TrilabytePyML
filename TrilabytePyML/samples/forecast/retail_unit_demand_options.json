@@ -26,5 +26,6 @@
 	"ridgeAlpha": 1.0,
 	"timestampColumn": "CAL_DATE",
 	"forceNonNegative": false,
+	"forcePositiveCoefficients": false,
 	"numHoldoutRows": 6
 }

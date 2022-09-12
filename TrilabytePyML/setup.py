@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='TrilabytePyML',
-      version='1.8',
+      version='2.0',
       description='Trilabyte Python Machine Learning',
       url='http://github.com/smutchler/src',
       author='Scott Mutchler',
@@ -11,7 +11,7 @@ setup(name='TrilabytePyML',
       install_requires=[
         'pmdarima',
         'loess',
-        'scikit-learn',
+        'scikit-learn>=1.1.2',
         'numpy',
         'scipy',
         'pandas'

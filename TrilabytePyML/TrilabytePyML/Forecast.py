@@ -273,8 +273,11 @@ class Forecast:
                       
         x = historicalData[params.getParam('predictorColumns', options)]
         y = historicalData['X_TREND']
-                
-        model = Ridge(alpha=params.getParam('ridgeAlpha', options))
+        
+        positiveCoefficents = params.getParam('forcePositiveCoefficients', options)  
+        alpha = params.getParam('ridgeAlpha', options)
+        
+        model = Ridge(alpha=alpha, positive=positiveCoefficents)
         model.fit(x, y)
         
         xscore = frame[params.getParam('predictorColumns', options)]
