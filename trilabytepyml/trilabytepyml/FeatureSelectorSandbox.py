@@ -1,4 +1,4 @@
-from TrilabytePyML.feature.FeatureSelector import FeatureSelector
+from trilabytepyml.feature.FeatureSelector import FeatureSelector
 
 if __name__ == '__main__':
     

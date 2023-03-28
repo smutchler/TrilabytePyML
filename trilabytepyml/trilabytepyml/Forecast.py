@@ -16,9 +16,9 @@ from sklearn.linear_model import Ridge
 import loess.loess_1d as lo
 import numpy as np
 import pmdarima as pm
-from TrilabytePyML.stats.Statistics import calcMAPE
-from TrilabytePyML.stats.Statistics import calcPredictionInterval
-import TrilabytePyML.util.Parameters as params 
+from trilabytepyml.stats.Statistics import calcMAPE
+from trilabytepyml.stats.Statistics import calcPredictionInterval
+import trilabytepyml.util.Parameters as params 
 import pandas as pd
 from sklearn.model_selection import ParameterGrid
 import json

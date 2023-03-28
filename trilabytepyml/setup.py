@@ -1,13 +1,13 @@
 from setuptools import setup
 
-setup(name='TrilabytePyML',
+setup(name='trilabytepyml',
       version='2.0',
       description='Trilabyte Python Machine Learning',
       url='http://github.com/smutchler/src',
       author='Scott Mutchler',
       author_email='smutchler@trilabyte.com',
       license='GPLv3',
-      packages=['TrilabytePyML','TrilabytePyML.stats','TrilabytePyML.util'],
+      packages=['trilabytepyml','trilabytepyml.stats','trilabytepyml.util'],
       install_requires=[
         'pmdarima',
         'loess',

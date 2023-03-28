@@ -11,7 +11,7 @@ import json
 import sys
 import pandas as pd 
 from sklearn.linear_model import Ridge
-import TrilabytePyML.util.Parameters as params 
+import trilabytepyml.util.Parameters as params 
 import random
 
 

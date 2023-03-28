@@ -10,11 +10,11 @@
 import json 
 import sys
 import pandas as pd 
-from TrilabytePyML.Forecast import Forecast
-import TrilabytePyML.util.Parameters as params
+from trilabytepyml.Forecast import Forecast
+import trilabytepyml.util.Parameters as params
 import traceback 
 from statistics import median
-from TrilabytePyML.stats.Statistics import calcMAPE
+from trilabytepyml.stats.Statistics import calcMAPE
 
 def findMAPE(frame: pd.DataFrame, options: dict, seasonality: str) -> float:
     """
