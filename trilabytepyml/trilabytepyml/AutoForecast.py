@@ -8,13 +8,14 @@
 # more comments
 
 import json 
-import sys
-import pandas as pd 
-from trilabytepyml.Forecast import Forecast
-import trilabytepyml.util.Parameters as params
-import traceback 
+from multiprocessing import Pool 
 from statistics import median
+import sys
 from trilabytepyml.stats.Statistics import calcMAPE
+from trilabytepyml.Forecast import Forecast
+import pandas as pd 
+import trilabytepyml.util.Parameters as params
+
 
 def findMAPE(frame: pd.DataFrame, options: dict, seasonality: str) -> float:
     """
@@ -84,6 +85,85 @@ def findOptimalSeasonality(frame: pd.DataFrame, options: dict) -> str:
     else:
         return "Multiplicative"
 
+def forecastInternal(fdict: dict) -> pd.DataFrame:
+    frame = fdict['frame']
+    options = fdict['options']
+    
+    frame.reset_index(drop=True, inplace=True)
+            
+    method = params.getParam('method', options)
+    
+    #specifies actions if the forecast method is set to "Auto" in 
+    #the options dictionary
+    if method == 'Auto':
+        opts = options.copy()
+        opts['method'] = 'ARIMA'
+        arimaFrame = forecastSingleFrame(frame.copy(), opts)
+        arimaMAPE = 1E6 if 'X_MAPE' not in arimaFrame else arimaFrame['X_MAPE'][0]
+        
+        opts = options.copy()
+        opts['method'] = 'MLR'
+        mlrFrame = forecastSingleFrame(frame.copy(), opts)
+        mlrMAPE = 1E6 if 'X_MAPE' not in mlrFrame else mlrFrame['X_MAPE'][0]
+        
+        if 'X_FORECAST' in mlrFrame  and 'X_FORECAST' in arimaFrame:
+            ensembleFrame = mlrFrame.copy() 
+            
+            # we calculate MAPE using original data column
+            targetColumn = params.getParam('targetColumn', options)
+            if (targetColumn.startswith('X_')):
+                targetColumn = targetColumn[2:]
+            
+            # split the data into past/future based on null in target column 
+            numHoldoutRows = params.getParam('numHoldoutRows', options)
+            lastNonNullIdx = Forecast().lastNonNullIndex(ensembleFrame[targetColumn])
+            lastNonNullIdx = lastNonNullIdx - numHoldoutRows
+
+            if (numHoldoutRows > 0):
+                evalIdx = list(map(lambda x: x > lastNonNullIdx and x <= (lastNonNullIdx + numHoldoutRows), ensembleFrame['X_INDEX']))
+            else:
+                evalIdx = ensembleFrame['X_INDEX'] <= lastNonNullIdx
+            
+            ensembleFrame['X_FORECAST'] = list(map(lambda x, y: median([x, y]), mlrFrame['X_FORECAST'], arimaFrame['X_FORECAST']))
+            ensembleFrame['X_LPI'] = list(map(lambda x, y: median([x, y]), mlrFrame['X_LPI'], arimaFrame['X_LPI']))
+            ensembleFrame['X_UPI'] = list(map(lambda x, y: median([x, y]), mlrFrame['X_UPI'], arimaFrame['X_UPI']))
+            
+            evalFrame = ensembleFrame[evalIdx]
+            try:
+                ensembleMAPE = calcMAPE(evalFrame['X_FORECAST'], evalFrame[targetColumn])
+                ensembleFrame['X_MAPE'] = ensembleMAPE
+                for index, row in ensembleFrame.iterrows():
+                    ensembleFrame['X_APE'][index] = (abs(row['X_FORECAST'] - row[targetColumn]) / row[targetColumn] * 100.0) if row[targetColumn] != 0 else None
+            except:
+                # this may be needed if all forecasts frame and MAPE, APE cannot be calculated
+                if (not('X_MAPE' in ensembleFrame)):
+                    ensembleFrame['X_MAPE'] = 1E6
+                if (not('X_APE' in ensembleFrame)):
+                    ensembleFrame['X_APE'] = 1E6
+                
+            mapes = [mlrMAPE, arimaMAPE, ensembleMAPE]
+        else:
+            mapes = [mlrMAPE, arimaMAPE]
+        
+        print("Auto MAPEs (MLR, ARIMA, Ensemble): ", mapes)
+        
+        minMAPE = min(mapes)
+        
+        if (mlrMAPE <= minMAPE):
+            frame = mlrFrame
+            frame['X_METHOD'] = 'MLR'
+        elif (arimaMAPE <= minMAPE):
+            frame = arimaFrame
+            frame['X_METHOD'] = 'ARIMA'      
+        else:
+            frame = ensembleFrame
+            frame['X_METHOD'] = 'Ensemble'                         
+        
+    else:
+        frame = forecastSingleFrame(frame, options.copy())
+        
+    return frame;
+
 
 def splitFramesAndForecast(frame: pd.DataFrame, options: dict) -> pd.DataFrame:
     """
@@ -106,6 +186,8 @@ def splitFramesAndForecast(frame: pd.DataFrame, options: dict) -> pd.DataFrame:
         forecast added.
 
     """
+    pd.options.mode.chained_assignment = None
+    
     #creates a list of frames, each of which will correspond to a different
     #forecast
     frame.sort_values(by=params.getParam('sortColumns', options), ascending=True, inplace=True)
@@ -114,82 +196,20 @@ def splitFramesAndForecast(frame: pd.DataFrame, options: dict) -> pd.DataFrame:
     
     outputFrame = None
 
+    #package frame/options so we can iterate over a sinle dict() object
+    dicts = []
     for frame in frames:
-            frame = frame[1]
-            frame.reset_index(drop=True, inplace=True)
-            
-            method = params.getParam('method', options)
-            
-            #specifies actions if the forecast method is set to "Auto" in 
-            #the options dictionary
-            if method == 'Auto':
-                opts = options.copy()
-                opts['method'] = 'ARIMA'
-                arimaFrame = forecastSingleFrame(frame.copy(), opts)
-                arimaMAPE = 1E6 if 'X_MAPE' not in arimaFrame else arimaFrame['X_MAPE'][0]
-                
-                opts = options.copy()
-                opts['method'] = 'MLR'
-                mlrFrame = forecastSingleFrame(frame.copy(), opts)
-                mlrMAPE = 1E6 if 'X_MAPE' not in mlrFrame else mlrFrame['X_MAPE'][0]
-                
-                if 'X_FORECAST' in mlrFrame  and 'X_FORECAST' in arimaFrame:
-                    ensembleFrame = mlrFrame.copy() 
-                    
-                    # we calculate MAPE using original data column
-                    targetColumn = params.getParam('targetColumn', options)
-                    if (targetColumn.startswith('X_')):
-                        targetColumn = targetColumn[2:]
-                    
-                    # split the data into past/future based on null in target column 
-                    numHoldoutRows = params.getParam('numHoldoutRows', options)
-                    lastNonNullIdx = Forecast().lastNonNullIndex(ensembleFrame[targetColumn])
-                    lastNonNullIdx = lastNonNullIdx - numHoldoutRows
-        
-                    if (numHoldoutRows > 0):
-                        evalIdx = list(map(lambda x: x > lastNonNullIdx and x <= (lastNonNullIdx + numHoldoutRows), ensembleFrame['X_INDEX']))
-                    else:
-                        evalIdx = ensembleFrame['X_INDEX'] <= lastNonNullIdx
-                    
-                    ensembleFrame['X_FORECAST'] = list(map(lambda x, y: median([x, y]), mlrFrame['X_FORECAST'], arimaFrame['X_FORECAST']))
-                    ensembleFrame['X_LPI'] = list(map(lambda x, y: median([x, y]), mlrFrame['X_LPI'], arimaFrame['X_LPI']))
-                    ensembleFrame['X_UPI'] = list(map(lambda x, y: median([x, y]), mlrFrame['X_UPI'], arimaFrame['X_UPI']))
-                    
-                    evalFrame = ensembleFrame[evalIdx]
-                    try:
-                        ensembleMAPE = calcMAPE(evalFrame['X_FORECAST'], evalFrame[targetColumn])
-                        ensembleFrame['X_MAPE'] = ensembleMAPE
-                        for index, row in ensembleFrame.iterrows():
-                            ensembleFrame['X_APE'][index] = (abs(row['X_FORECAST'] - row[targetColumn]) / row[targetColumn] * 100.0) if row[targetColumn] != 0 else None
-                    except:
-                        # this may be needed if all forecasts frame and MAPE, APE cannot be calculated
-                        if (not('X_MAPE' in ensembleFrame)):
-                            ensembleFrame['X_MAPE'] = 1E6
-                        if (not('X_APE' in ensembleFrame)):
-                            ensembleFrame['X_APE'] = 1E6
-                        
-                    mapes = [mlrMAPE, arimaMAPE, ensembleMAPE]
-                else:
-                    mapes = [mlrMAPE, arimaMAPE]
-                
-                print("Auto MAPEs (MLR, ARIMA, Ensemble): ", mapes)
-                
-                minMAPE = min(mapes)
-                
-                if (mlrMAPE <= minMAPE):
-                    frame = mlrFrame
-                    frame['X_METHOD'] = 'MLR'
-                elif (arimaMAPE <= minMAPE):
-                    frame = arimaFrame
-                    frame['X_METHOD'] = 'ARIMA'      
-                else:
-                    frame = ensembleFrame
-                    frame['X_METHOD'] = 'Ensemble'                         
-                
-            else:
-                frame = forecastSingleFrame(frame, options.copy())
-            
-            outputFrame = frame if outputFrame is None else outputFrame.append(frame, ignore_index=True)
+        fdict = dict()
+        fdict['frame'] = frame[1]
+        fdict['options'] = options
+        dicts.append(fdict)
+    
+    #thread execution
+    with Pool() as pool:
+        results = pool.map(forecastInternal, dicts)
+    
+    for frame in results:
+        outputFrame = frame if outputFrame is None else outputFrame.append(frame, ignore_index=True)
     
     return outputFrame
 
@@ -211,6 +231,8 @@ def forecastSingleFrame(frame: pd.DataFrame, options: dict) -> pd.DataFrame:
         forecast.
 
     """
+    pd.options.mode.chained_assignment = None
+    
     try:
         method = params.getParam('method', options)
         currentOptions = options.copy()
@@ -252,7 +274,7 @@ if __name__ == '__main__':
   
     pd.options.mode.chained_assignment = None  # default='warn'
   
-    DEBUG = True 
+    DEBUG = False 
   
     if DEBUG:
         fileName = 'c:/temp/retail_unit_demand.csv'

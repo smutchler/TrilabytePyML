@@ -1,3 +1,4 @@
 REM You must use Anaconda
 pause
-py setup.py develop
+REM python setup.py develop
+pip install .

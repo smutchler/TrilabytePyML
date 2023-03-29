@@ -1,7 +1,8 @@
-from setuptools import setup
+#from setuptools import setup
+from distutils.core import setup
 
 setup(name='trilabytepyml',
-      version='2.0',
+      version='3.0',
       description='Trilabyte Python Machine Learning',
       url='http://github.com/smutchler/src',
       author='Scott Mutchler',
