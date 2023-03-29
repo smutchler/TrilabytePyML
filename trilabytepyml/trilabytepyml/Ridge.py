@@ -13,6 +13,8 @@ import pandas as pd
 from sklearn.linear_model import Ridge
 import trilabytepyml.util.Parameters as params 
 import random
+from multiprocessing import Pool
+from astropy.convolution.tests.test_convolve_fft import options
 
 
 def buildSampleoptionsJSONFile(jsonFileName: str) -> None:
@@ -93,7 +95,7 @@ def calcContributions(x, model, options):
         return None
 
 
-def predict(frame: pd.DataFrame, options: dict) -> dict:
+def predict(tdict: dict) -> dict:
     """
     The function takes as an argument the "frame" parameter, which is a 
     pandas dataframe with the data involved in the forecast, and the "options"
@@ -121,6 +123,11 @@ def predict(frame: pd.DataFrame, options: dict) -> dict:
         model predictions
 
     """
+    pd.options.mode.chained_assignment = None
+    
+    frame = tdict['frame']
+    options = tdict['options']
+    
     fdict = dict()
     
     # handle hold-out fraction
@@ -182,17 +189,25 @@ def splitIntoFramesAndPredict(frame: pd.DataFrame, options: dict) -> pd.DataFram
         Returns multiple forecasts
 
     """
+    pd.options.mode.chained_assignment = None
+    
     frames = list(frame.groupby(by=options['splitColumns']))
     
     outputFrame = None
  
+    fdicts = []
     for frame in frames:
+        fdict = dict()
         frame = frame[1]
         frame.reset_index(drop=True, inplace=True)
+        fdict['frame'] = frame
+        fdict['options'] = options
+        fdicts.append(fdict)
+    
+    with Pool() as pool:
+        results = pool.map(predict, fdicts)
         
-        fdict = predict(frame, options)
-        frame = fdict['frame']
-         
+    for frame in results:  
         outputFrame = frame if outputFrame is None else outputFrame.append(frame)
     
     return outputFrame
@@ -211,7 +226,7 @@ if __name__ == '__main__':
     print("Usage: python -m src.Ridge [json options] [csv source data] [output csv file]")
     print("-------------------------------")
 
-    DEBUG = False
+    DEBUG = True
     
     if DEBUG:
         fileName = 'c:/temp/iris_with_role_and_split.csv'
