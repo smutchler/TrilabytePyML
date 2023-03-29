@@ -207,7 +207,8 @@ def splitIntoFramesAndPredict(frame: pd.DataFrame, options: dict) -> pd.DataFram
     with Pool() as pool:
         results = pool.map(predict, fdicts)
         
-    for frame in results:  
+    for tdict in results:  
+        frame = tdict['frame']
         outputFrame = frame if outputFrame is None else outputFrame.append(frame)
     
     return outputFrame
