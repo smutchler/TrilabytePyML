@@ -2,7 +2,7 @@
 from distutils.core import setup
 
 setup(name='trilabytepyml',
-      version='3.2',
+      version='3.4',
       description='Trilabyte Python Machine Learning',
       url='http://github.com/smutchler/src',
       author='Scott Mutchler',

@@ -93,8 +93,11 @@ def calcContributions(x, model, options):
     except:
         return None
 
+def predictWrapper(tdict: dict) -> dict:
+    return predict(tdict['frame'], tdict['options'])
 
-def predict(tdict: dict) -> dict:
+
+def predict(frame: pd.DataFrame, options: dict) -> dict:
     """
     The function takes as an argument the "frame" parameter, which is a 
     pandas dataframe with the data involved in the forecast, and the "options"
@@ -123,9 +126,6 @@ def predict(tdict: dict) -> dict:
 
     """
     pd.options.mode.chained_assignment = None
-    
-    frame = tdict['frame']
-    options = tdict['options']
     
     fdict = dict()
     
@@ -204,7 +204,7 @@ def splitIntoFramesAndPredict(frame: pd.DataFrame, options: dict) -> pd.DataFram
         fdicts.append(fdict)
     
     with Pool() as pool:
-        results = pool.map(predict, fdicts)
+        results = pool.map(predictWrapper, fdicts)
         
     for tdict in results:  
         frame = tdict['frame']
