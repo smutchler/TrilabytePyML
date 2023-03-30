@@ -14,7 +14,6 @@ from sklearn.linear_model import Ridge
 import trilabytepyml.util.Parameters as params 
 import random
 from multiprocessing import Pool
-from astropy.convolution.tests.test_convolve_fft import options
 
 
 def buildSampleoptionsJSONFile(jsonFileName: str) -> None:
