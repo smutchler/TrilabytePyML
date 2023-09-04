@@ -7,6 +7,11 @@
 		"Sepal.Length",
 		"Petal.Width"
 	],
+	"predictorConstraints": [
+		["positive","exclude","exclude"],
+		["positive","positive","exclude"],
+		["positive","auto","negative"]
+	],
 	"roleColumn": "Role",
 	"targetColumn": "Petal.Length",
 	"autoDetectOutliers": true,

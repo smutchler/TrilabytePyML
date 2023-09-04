@@ -15,38 +15,10 @@ import trilabytepyml.util.Parameters as params
 import random
 from multiprocessing import Pool
 
-
-def buildSampleoptionsJSONFile(jsonFileName: str) -> None:
-    """
-    This function creates a JSON file storing some of the options information
-    for use with the iris_ridge data in the samples folder that comes with
-    the module. It should be saved to the working directory under the name
-    passed as the jsonFileName parameter.
-
-    Parameters
-    ----------
-    jsonFileName : str
-        Desired name of JSON file
-
-    Returns
-    -------
-    None
-        No output
-
-    """
-    options = dict()
-    options['splitColumns'] = ['Split']
-    options['predictorColumns'] = ['Sepal.Width', 'Sepal.Length', 'Petal.Width']
-    options['roleColumn'] = 'Role'
-    options['targetColumn'] = 'Petal.Length' 
-    options['ridgeAlpha'] = 1.0
-    
-    # print(json.dumps(options))
-    
-    with open(jsonFileName, 'w') as fp:
-        json.dump(options, fp)
-
-        
+#
+# Detect outliers using stdev from mean (after removing seasonality) - if it's an outlier put
+# a 1 in the X_OUTLIER column otherwise 0
+#
 def detectOutliers(frame: pd.DataFrame, options: dict):
     '''
     Find target values that are outsize X standard deviations of the mean
@@ -93,9 +65,8 @@ def calcContributions(x, model, options):
     except:
         return None
 
-def predictWrapper(tdict: dict) -> dict:
+def predictThreadWrapper(tdict: dict) -> dict:
     return predict(tdict['frame'], tdict['options'])
-
 
 def predict(frame: pd.DataFrame, options: dict) -> dict:
     """
@@ -163,6 +134,9 @@ def predict(frame: pd.DataFrame, options: dict) -> dict:
     return(fdict)
 
 
+#
+# DEPRECATED: Use AutoRidge.splitIntoFramesAndPredict
+#
 def splitIntoFramesAndPredict(frame: pd.DataFrame, options: dict) -> pd.DataFrame:
     """
     This function expands on the functionality of the predict() function
@@ -188,6 +162,9 @@ def splitIntoFramesAndPredict(frame: pd.DataFrame, options: dict) -> pd.DataFram
         Returns multiple forecasts
 
     """
+    import warnings
+    warnings.warn("Deprecated: Use AutoRidge.splitIntoFramesAndPredict")
+    
     pd.options.mode.chained_assignment = None
     
     frames = list(frame.groupby(by=options['splitColumns']))
@@ -204,7 +181,7 @@ def splitIntoFramesAndPredict(frame: pd.DataFrame, options: dict) -> pd.DataFram
         fdicts.append(fdict)
     
     with Pool() as pool:
-        results = pool.map(predictWrapper, fdicts)
+        results = pool.map(predictThreadWrapper, fdicts)
         
     for tdict in results:  
         frame = tdict['frame']
