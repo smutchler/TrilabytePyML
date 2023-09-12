@@ -15,7 +15,7 @@ from trilabytepyml.stats.Statistics import calcMAPE
 from trilabytepyml.Forecast import Forecast
 import pandas as pd 
 import trilabytepyml.util.Parameters as params
-
+import warnings
 
 def findMAPE(frame: pd.DataFrame, options: dict, seasonality: str) -> float:
     """
@@ -209,11 +209,13 @@ def splitFramesAndForecast(frame: pd.DataFrame, options: dict) -> pd.DataFrame:
         results = pool.map(forecastInternal, dicts)
     
     for frame in results:
-        outputFrame = frame if outputFrame is None else outputFrame.append(frame, ignore_index=True)
+        outputFrame = frame if outputFrame is None else pd.concat([outputFrame, frame], ignore_index=True) 
     
     return outputFrame
 
 def forecastSingleFrame(frame: pd.DataFrame, options: dict) -> pd.DataFrame:
+    warnings.warn("Deprecated: Use AutoForecsat.splitIntoFramesAndPredict")
+    
     """
     Basically the equivalent of splitFramesAndForecast() but for a single frame
 
@@ -274,7 +276,7 @@ if __name__ == '__main__':
   
     pd.options.mode.chained_assignment = None  # default='warn'
   
-    DEBUG = False 
+    DEBUG = True 
   
     if DEBUG:
         fileName = 'c:/temp/retail_unit_demand.csv'

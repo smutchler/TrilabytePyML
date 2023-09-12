@@ -14,6 +14,7 @@ from sklearn.linear_model import Ridge
 import trilabytepyml.util.Parameters as params 
 import random
 from multiprocessing import Pool
+import warnings
 
 #
 # Detect outliers using stdev from mean (after removing seasonality) - if it's an outlier put
@@ -65,8 +66,10 @@ def calcContributions(x, model, options):
     except:
         return None
 
+
 def predictThreadWrapper(tdict: dict) -> dict:
     return predict(tdict['frame'], tdict['options'])
+
 
 def predict(frame: pd.DataFrame, options: dict) -> dict:
     """
@@ -162,7 +165,6 @@ def splitIntoFramesAndPredict(frame: pd.DataFrame, options: dict) -> pd.DataFram
         Returns multiple forecasts
 
     """
-    import warnings
     warnings.warn("Deprecated: Use AutoRidge.splitIntoFramesAndPredict")
     
     pd.options.mode.chained_assignment = None
@@ -183,9 +185,9 @@ def splitIntoFramesAndPredict(frame: pd.DataFrame, options: dict) -> pd.DataFram
     with Pool() as pool:
         results = pool.map(predictThreadWrapper, fdicts)
         
-    for tdict in results:  
+    for tdict in results: 
         frame = tdict['frame']
-        outputFrame = frame if outputFrame is None else outputFrame.append(frame)
+        outputFrame = frame if outputFrame is None else pd.concat([outputFrame, frame], ignore_index=True)
     
     return outputFrame
 

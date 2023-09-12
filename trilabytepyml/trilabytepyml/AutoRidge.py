@@ -3,11 +3,80 @@ import json
 import pandas as pd
 import trilabytepyml.util.Parameters as params 
 from multiprocessing import Pool
-from trilabytepyml.Ridge import Ridge
+import trilabytepyml.Ridge as ri
 
 def predictOptimal(tdict: dict) -> dict:
-    ridge = Ridge()
-    return ridge.predict(tdict['frame'], tdict['options'])
+    frame = tdict['frame']
+    options = tdict['options']
+    
+    results = dict()
+    if 'predictorConstraints' in options:
+        # print('Constraining predictors...')       
+        constraints = options['predictorConstraints']
+        for constraint in constraints:
+            # print(f'********** Checking constraint: {constraint}')
+            newOptions = constrainOptions(constraint, options)
+            # print(f'''Predictors: {newOptions['predictorColumns']}''')
+            result = ri.predict(frame.copy(), newOptions)
+            frame = result['frame']
+            
+            # check for X_ERROR; if error then just return result
+            if 'X_ERROR' in frame and frame['X_ERROR'][0] is not None:
+                # print('Got X_ERROR is None')
+                return result
+            
+            rsqr = getRsqr(frame, constraint)
+            # print(f'rsqr: {rsqr}')
+            
+            results[rsqr] = result
+        
+        return results[max(results.keys())]
+    
+    return ri.predict(frame, options)
+
+# remove predictors where constraint = 'exclude'
+def constrainOptions(constraint:list, options:dict) -> dict:
+    predictors = options['predictorColumns']
+    
+    if len(constraint) != len(predictors):
+        raise('predictorConstraints must be same length as predictorColumns')
+        
+    newPredictors = []
+    for idx in range(len(constraint)):
+        constraintValue = constraint[idx]
+        predictorColumn = predictors[idx]
+        if constraintValue != 'exclude':
+            newPredictors.append(predictorColumn)
+    
+    if len(newPredictors) == 0:
+        raise('All predictor columns were excluded by constraints!')
+    
+    options = options.copy()
+    options['predictorColumns'] = newPredictors
+    return options
+
+# get Rsqr for a constrained Ridge prediction - return 0 if constraint violated
+def getRsqr(frame:pd.DataFrame, constraint:list) -> float:
+    # check constraints; if violated return 0
+    coefficients = [float(s) for s in frame['X_COEFFICIENTS'][0].split(',')]  
+    rsqr = float(frame['X_RSQR'][0])
+    # print(f'raw rsqr: {rsqr}')
+    
+    constraint = [s for s in constraint if s != 'exclude']
+    
+    for idx in range(len(constraint)):
+        constraintValue = constraint[idx]
+        coef = coefficients[idx]
+        
+        if constraintValue == 'negative' and coef > 0:
+            # print(f'Negative violated for {idx+1}')
+            return 0
+        if constraintValue == 'positive' and coef < 0:
+            # print(f'Positive violated for {idx+1}')
+            return 0
+    
+    return rsqr
+
 
 def splitIntoFramesAndPredict(frame: pd.DataFrame, options: dict) -> pd.DataFrame:
     """
@@ -34,7 +103,7 @@ def splitIntoFramesAndPredict(frame: pd.DataFrame, options: dict) -> pd.DataFram
         Returns multiple forecasts
 
     """
-    frames = list(frame.groupby(by=options['splitColumns']))
+    frames = list(frame.groupby(by=params.getParam('splitColumns', options)))
     
     outputFrame = None
  
@@ -52,7 +121,7 @@ def splitIntoFramesAndPredict(frame: pd.DataFrame, options: dict) -> pd.DataFram
         
     for tdict in results:  
         frame = tdict['frame']
-        outputFrame = frame if outputFrame is None else outputFrame.append(frame)
+        outputFrame = frame if outputFrame is None else pd.concat([outputFrame, frame], ignore_index = True)
     
     return outputFrame
 

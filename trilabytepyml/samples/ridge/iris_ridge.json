@@ -10,12 +10,14 @@
 	"predictorConstraints": [
 		["positive","exclude","exclude"],
 		["positive","positive","exclude"],
-		["positive","auto","negative"]
+		["negative","auto","exclude"],
+		["negative","auto","auto"]
 	],
 	"roleColumn": "Role",
 	"targetColumn": "Petal.Length",
 	"autoDetectOutliers": true,
 	"outlierStdevMultiplier": 3.0,
 	"ridgeAlpha": 1.0,
-	"holdoutFraction": 0.5
+	"holdoutFraction": 0.5,
+	"forcePositiveCoefficients": false
 }
