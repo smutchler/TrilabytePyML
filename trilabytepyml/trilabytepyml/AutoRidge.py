@@ -30,7 +30,7 @@ def predictOptimal(tdict: dict) -> dict:
             
             results[rsqr] = result
         
-        if (max(results.keys() == 0)):
+        if max(results.keys()) == 0:
             raise("No valid model was found")
         
         return results[max(results.keys())]
