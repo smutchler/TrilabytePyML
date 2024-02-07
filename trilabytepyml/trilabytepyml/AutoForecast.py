@@ -5,21 +5,22 @@
 #    Author: Scott Mutchler
 #    Contact: smutchler@trilabyte.com
 #
-# more comments
+#
 
-import json 
-from multiprocessing import Pool 
+import json
+from multiprocessing import Pool
 from statistics import median
 import sys
 from trilabytepyml.stats.Statistics import calcMAPE
 from trilabytepyml.Forecast import Forecast
-import pandas as pd 
+import pandas as pd
 import trilabytepyml.util.Parameters as params
 import warnings
 
+
 def findMAPE(frame: pd.DataFrame, options: dict, seasonality: str) -> float:
     """
-    This function takes the data through the "frame" parameter, takes the 
+    This function takes the data through the "frame" parameter, takes the
     instructions as to how to read the data through the 'options' dictionary
     parameter, and then takes the seasonality that should be applied to the
     instance of MLR forecast that forms part of this function.
@@ -36,14 +37,14 @@ def findMAPE(frame: pd.DataFrame, options: dict, seasonality: str) -> float:
     Returns
     -------
     dict
-        Returns the MAPE on the results of the forecastMLR() forecast and the 
+        Returns the MAPE on the results of the forecastMLR() forecast and the
         actuals column
 
     """
     options = options.copy()
-    options['seasonality'] = seasonality
+    options["seasonality"] = seasonality
     model = Forecast()
-    return  model.forecastMLR(frame.copy(), options)['MAPE']
+    return model.forecastMLR(frame.copy(), options)["MAPE"]
 
 
 def findOptimalSeasonality(frame: pd.DataFrame, options: dict) -> str:
@@ -65,104 +66,131 @@ def findOptimalSeasonality(frame: pd.DataFrame, options: dict) -> str:
         Will be "None", "Additive", or "Multiplicative"
 
     """
-    nonNullRowCount = frame[params.getParam('targetColumn', options)].count()
-    periodicity = params.getParam('periodicity', options)
-    
+    nonNullRowCount = frame[params.getParam("targetColumn", options)].count()
+    periodicity = params.getParam("periodicity", options)
+
     if nonNullRowCount < periodicity:
         return "None"
-    
-    noSeasonalityMAPE = findMAPE(frame, options.copy(), 'None')
-    additiveMAPE = findMAPE(frame, options.copy(), 'Additive')
-    multiplicativeMAPE = findMAPE(frame, options.copy(), 'Multiplicative')
-    
+
+    noSeasonalityMAPE = findMAPE(frame, options.copy(), "None")
+    additiveMAPE = findMAPE(frame, options.copy(), "Additive")
+    multiplicativeMAPE = findMAPE(frame, options.copy(), "Multiplicative")
+
     minMAPE = min(noSeasonalityMAPE, additiveMAPE, multiplicativeMAPE)
-    
+
     # in case of ties this returns a hierarchy of simple to complex
-    if (noSeasonalityMAPE == minMAPE):
+    if noSeasonalityMAPE == minMAPE:
         return "None"
-    elif (additiveMAPE == minMAPE):
+    elif additiveMAPE == minMAPE:
         return "Additive"
     else:
         return "Multiplicative"
 
+
 def forecastInternal(fdict: dict) -> pd.DataFrame:
-    frame = fdict['frame']
-    options = fdict['options']
-    
+    frame = fdict["frame"]
+    options = fdict["options"]
+
     frame.reset_index(drop=True, inplace=True)
-            
-    method = params.getParam('method', options)
-    
-    #specifies actions if the forecast method is set to "Auto" in 
-    #the options dictionary
-    if method == 'Auto':
+
+    method = params.getParam("method", options)
+
+    # specifies actions if the forecast method is set to "Auto" in
+    # the options dictionary
+    if method == "Auto":
         opts = options.copy()
-        opts['method'] = 'ARIMA'
+        opts["method"] = "ARIMA"
         arimaFrame = forecastSingleFrame(frame.copy(), opts)
-        arimaMAPE = 1E6 if 'X_MAPE' not in arimaFrame else arimaFrame['X_MAPE'][0]
-        
+        arimaMAPE = 1e6 if "X_MAPE" not in arimaFrame else arimaFrame["X_MAPE"][0]
+
         opts = options.copy()
-        opts['method'] = 'MLR'
+        opts["method"] = "MLR"
         mlrFrame = forecastSingleFrame(frame.copy(), opts)
-        mlrMAPE = 1E6 if 'X_MAPE' not in mlrFrame else mlrFrame['X_MAPE'][0]
-        
-        if 'X_FORECAST' in mlrFrame  and 'X_FORECAST' in arimaFrame:
-            ensembleFrame = mlrFrame.copy() 
-            
+        mlrMAPE = 1e6 if "X_MAPE" not in mlrFrame else mlrFrame["X_MAPE"][0]
+
+        if "X_FORECAST" in mlrFrame and "X_FORECAST" in arimaFrame:
+            ensembleFrame = mlrFrame.copy()
+
             # we calculate MAPE using original data column
-            targetColumn = params.getParam('targetColumn', options)
-            if (targetColumn.startswith('X_')):
+            targetColumn = params.getParam("targetColumn", options)
+            if targetColumn.startswith("X_"):
                 targetColumn = targetColumn[2:]
-            
-            # split the data into past/future based on null in target column 
-            numHoldoutRows = params.getParam('numHoldoutRows', options)
+
+            # split the data into past/future based on null in target column
+            numHoldoutRows = params.getParam("numHoldoutRows", options)
             lastNonNullIdx = Forecast().lastNonNullIndex(ensembleFrame[targetColumn])
             lastNonNullIdx = lastNonNullIdx - numHoldoutRows
 
-            if (numHoldoutRows > 0):
-                evalIdx = list(map(lambda x: x > lastNonNullIdx and x <= (lastNonNullIdx + numHoldoutRows), ensembleFrame['X_INDEX']))
+            if numHoldoutRows > 0:
+                evalIdx = list(
+                    map(
+                        lambda x: x > lastNonNullIdx
+                        and x <= (lastNonNullIdx + numHoldoutRows),
+                        ensembleFrame["X_INDEX"],
+                    )
+                )
             else:
-                evalIdx = ensembleFrame['X_INDEX'] <= lastNonNullIdx
-            
-            ensembleFrame['X_FORECAST'] = list(map(lambda x, y: median([x, y]), mlrFrame['X_FORECAST'], arimaFrame['X_FORECAST']))
-            ensembleFrame['X_LPI'] = list(map(lambda x, y: median([x, y]), mlrFrame['X_LPI'], arimaFrame['X_LPI']))
-            ensembleFrame['X_UPI'] = list(map(lambda x, y: median([x, y]), mlrFrame['X_UPI'], arimaFrame['X_UPI']))
-            
+                evalIdx = ensembleFrame["X_INDEX"] <= lastNonNullIdx
+
+            ensembleFrame["X_FORECAST"] = list(
+                map(
+                    lambda x, y: median([x, y]),
+                    mlrFrame["X_FORECAST"],
+                    arimaFrame["X_FORECAST"],
+                )
+            )
+            ensembleFrame["X_LPI"] = list(
+                map(lambda x, y: median([x, y]), mlrFrame["X_LPI"], arimaFrame["X_LPI"])
+            )
+            ensembleFrame["X_UPI"] = list(
+                map(lambda x, y: median([x, y]), mlrFrame["X_UPI"], arimaFrame["X_UPI"])
+            )
+
             evalFrame = ensembleFrame[evalIdx]
             try:
-                ensembleMAPE = calcMAPE(evalFrame['X_FORECAST'], evalFrame[targetColumn])
-                ensembleFrame['X_MAPE'] = ensembleMAPE
+                ensembleMAPE = calcMAPE(
+                    evalFrame["X_FORECAST"], evalFrame[targetColumn]
+                )
+                ensembleFrame["X_MAPE"] = ensembleMAPE
                 for index, row in ensembleFrame.iterrows():
-                    ensembleFrame['X_APE'][index] = (abs(row['X_FORECAST'] - row[targetColumn]) / row[targetColumn] * 100.0) if row[targetColumn] != 0 else None
+                    ensembleFrame["X_APE"][index] = (
+                        (
+                            abs(row["X_FORECAST"] - row[targetColumn])
+                            / row[targetColumn]
+                            * 100.0
+                        )
+                        if row[targetColumn] != 0
+                        else None
+                    )
             except:
                 # this may be needed if all forecasts frame and MAPE, APE cannot be calculated
-                if (not('X_MAPE' in ensembleFrame)):
-                    ensembleFrame['X_MAPE'] = 1E6
-                if (not('X_APE' in ensembleFrame)):
-                    ensembleFrame['X_APE'] = 1E6
-                
+                if not ("X_MAPE" in ensembleFrame):
+                    ensembleFrame["X_MAPE"] = 1e6
+                if not ("X_APE" in ensembleFrame):
+                    ensembleFrame["X_APE"] = 1e6
+
             mapes = [mlrMAPE, arimaMAPE, ensembleMAPE]
         else:
             mapes = [mlrMAPE, arimaMAPE]
-        
+
         print("Auto MAPEs (MLR, ARIMA, Ensemble): ", mapes)
-        
+
         minMAPE = min(mapes)
-        
-        if (mlrMAPE <= minMAPE):
+
+        if mlrMAPE <= minMAPE:
             frame = mlrFrame
-            frame['X_METHOD'] = 'MLR'
-        elif (arimaMAPE <= minMAPE):
+            frame["X_METHOD"] = "MLR"
+        elif arimaMAPE <= minMAPE:
             frame = arimaFrame
-            frame['X_METHOD'] = 'ARIMA'      
+            frame["X_METHOD"] = "ARIMA"
         else:
             frame = ensembleFrame
-            frame['X_METHOD'] = 'Ensemble'                         
-        
+            frame["X_METHOD"] = "Ensemble"
+
     else:
         frame = forecastSingleFrame(frame, options.copy())
-        
-    return frame;
+
+    return frame
 
 
 def splitFramesAndForecast(frame: pd.DataFrame, options: dict) -> pd.DataFrame:
@@ -187,35 +215,42 @@ def splitFramesAndForecast(frame: pd.DataFrame, options: dict) -> pd.DataFrame:
 
     """
     pd.options.mode.chained_assignment = None
-    
-    #creates a list of frames, each of which will correspond to a different
-    #forecast
-    frame.sort_values(by=params.getParam('sortColumns', options), ascending=True, inplace=True)
-    
-    frames = list(frame.groupby(by=params.getParam('splitColumns', options)))
-    
+
+    # creates a list of frames, each of which will correspond to a different
+    # forecast
+    frame.sort_values(
+        by=params.getParam("sortColumns", options), ascending=True, inplace=True
+    )
+
+    frames = list(frame.groupby(by=params.getParam("splitColumns", options)))
+
     outputFrame = None
 
-    #package frame/options so we can iterate over a sinle dict() object
+    # package frame/options so we can iterate over a sinle dict() object
     dicts = []
     for frame in frames:
         fdict = dict()
-        fdict['frame'] = frame[1]
-        fdict['options'] = options
+        fdict["frame"] = frame[1]
+        fdict["options"] = options
         dicts.append(fdict)
-    
-    #thread execution
+
+    # thread execution
     with Pool() as pool:
         results = pool.map(forecastInternal, dicts)
-    
+
     for frame in results:
-        outputFrame = frame if outputFrame is None else pd.concat([outputFrame, frame], ignore_index=True) 
-    
+        outputFrame = (
+            frame
+            if outputFrame is None
+            else pd.concat([outputFrame, frame], ignore_index=True)
+        )
+
     return outputFrame
+
 
 def forecastSingleFrame(frame: pd.DataFrame, options: dict) -> pd.DataFrame:
     warnings.warn("Deprecated: Use AutoForecsat.splitIntoFramesAndPredict")
-    
+
     """
     Basically the equivalent of splitFramesAndForecast() but for a single frame
 
@@ -234,74 +269,78 @@ def forecastSingleFrame(frame: pd.DataFrame, options: dict) -> pd.DataFrame:
 
     """
     pd.options.mode.chained_assignment = None
-    
+
     try:
-        method = params.getParam('method', options)
+        method = params.getParam("method", options)
         currentOptions = options.copy()
-        
+
         model = Forecast()
-                    
-        if (method == 'MLR'):
-            if params.getParam('seasonality', options) == 'Auto':
-                currentOptions['seasonality'] = findOptimalSeasonality(frame.copy(), options.copy())
-            
+
+        if method == "MLR":
+            if params.getParam("seasonality", options) == "Auto":
+                currentOptions["seasonality"] = findOptimalSeasonality(
+                    frame.copy(), options.copy()
+                )
+
             fdict = model.forecastMLR(frame, currentOptions.copy())
         else:
             fdict = model.forecastARIMA(frame, currentOptions.copy())
-        
-        frame = fdict['frame']
-        frame['X_ERROR'] = None 
-        frame['X_METHOD'] = method
-    
+
+        frame = fdict["frame"]
+        frame["X_ERROR"] = None
+        frame["X_METHOD"] = method
+
     except Exception as e:
         # ed = str(traceback.format_exc()).replace('\n', ' ')
-        frame['X_ERROR'] = e
-        frame['X_METHOD'] = method
-    
+        frame["X_ERROR"] = e
+        frame["X_METHOD"] = method
+
     return frame
-        
+
 
 ##############################
 # Main
 ##############################
-if __name__ == '__main__':
-    
+if __name__ == "__main__":
+
     print("AutoForecast")
     print("-------------------------------")
     print("Required Librarires:")
     print("pip install pandas loess scipy numpy scikit-learn pmdarima")
     print("-------------------------------")
-    print("Usage: python -m src.AutoForecast [json forecastMLR options] [csv source data] [output csv file]")
+    print(
+        "Usage: python -m src.AutoForecast [json forecastMLR options] [csv source data] [output csv file]"
+    )
     print("-------------------------------")
-  
+
     pd.options.mode.chained_assignment = None  # default='warn'
-  
-    DEBUG = True 
-  
+
+    DEBUG = True
+
     if DEBUG:
-        fileName = 'c:/temp/retail_unit_demand.csv'
-        jsonFileName = 'c:/temp/retail_unit_demand_options.json'
-        outputFileName = 'c:/temp/retail_unit_demand_forecast.csv'
+        fileName = "c:/temp/retail_unit_demand.csv"
+        jsonFileName = "c:/temp/retail_unit_demand_options.json"
+        outputFileName = "c:/temp/retail_unit_demand_forecast.csv"
     else:
-        if (len(sys.argv) < 3):
+        if len(sys.argv) < 3:
             print("Error: Insufficient arguments")
             sys.exit(-1)
         jsonFileName = sys.argv[1]
         fileName = sys.argv[2]
         outputFileName = sys.argv[3]
-    
-    with open(jsonFileName, 'r') as fp:
+
+    with open(jsonFileName, "r") as fp:
         options = json.load(fp)
-    
-    print('Options:') 
-    print(json.dumps(options, indent=2), '\n')
-    
+
+    print("Options:")
+    print(json.dumps(options, indent=2), "\n")
+
     frame = pd.read_csv(fileName)
-        
+
     outputFrame = splitFramesAndForecast(frame, options)
-    
+
     outputFrame.to_csv(outputFileName, index=False)
-    
+
     print("Output file: ", outputFileName)
-    
+
     print("Forecast(s) complete...")
